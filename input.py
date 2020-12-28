@@ -57,6 +57,9 @@ class inputProcessing:
 		all_activity=self.backward_pass(all_activity)
 		print(all_activity)
 		self.get_critical_path(all_activity)
+		resource_list=self.calculate_resource(all_activity)
+		cumulative_r=self.calculate_cumulative_R(all_activity,resource_list)
+		cumulative_r_2=self.calculate_cumulative_R_2(all_activity,resource_list)
 
 	def rename_start_node(self, start_activities, all_activity):
 		sucs_list=[]
@@ -276,6 +279,42 @@ class inputProcessing:
 				activity.freefloat= activity.ls-activity.es
 
 		print(critical_path)
+
+	def calculate_resource(self,all_activity):
+		n=all_activity[len(all_activity)-1].lf
+		print("finish ",n)
+		resource_list=[0]*n
+		i=0
+		for activity in all_activity:
+			print(activity.resource)
+			for x in range(activity.es, activity.ef):
+				resource_list[x]=resource_list[x]+activity.resource
+			
+		print(resource_list)
+		return resource_list
+	def calculate_cumulative_R(self,all_activity, resource_list):
+		n=all_activity[len(all_activity)-1].lf
+		cumulative_r=[0]*n
+		cumulative_r[0]=resource_list[0]
+		i=1
+		for res in range(1,len(resource_list)):
+			cumulative_r[i]=cumulative_r[i-1]+resource_list[res]
+			i+=1
+
+		print(cumulative_r)
+
+		return cumulative_r
+	def calculate_cumulative_R_2(self,all_activity, resource_list):
+		n=all_activity[len(all_activity)-1].lf
+		cumulative_r_2=[0]*n
+		cumulative_r_2[0]=resource_list[0]**2
+		i=1
+		for res in range(1,len(resource_list)):
+			cumulative_r_2[i]=cumulative_r_2[i-1]+resource_list[res]**2
+			i+=1
+
+		print(cumulative_r_2)
+		return cumulative_r_2
 
 inputProcessing().takeinput()
 # inputProcessing().forward_pass()
