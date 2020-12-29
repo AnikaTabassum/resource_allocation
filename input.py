@@ -1,6 +1,8 @@
 ########## activity class ##################
+from operator import attrgetter
+import operator
 class Activity:
-	def __init__(self, name, duration, resource, es, ef, ls, lf, freefloat, pred, sucs):
+	def __init__(self, name, duration, resource, es, ef, ls, lf, freefloat, pred, sucs,newStart, dependencyList):
 		self.name = name
 		self.duration= int(duration)
 		self.resource= int(resource)
@@ -11,6 +13,8 @@ class Activity:
 		self.freefloat=freefloat
 		self.pred=pred
 		self.sucs=sucs
+		self.newStart = newStart
+		self.dependencyList = dependencyList
 
 class inputProcessing:
 	def __init__(self):
@@ -24,6 +28,7 @@ class inputProcessing:
 		filename="data.txt"
 		start_activities=[] #activities who don't have any predecessors
 		all_activity=[] #list of all activity objects
+		all_activity_node=[]
 		with open(filename) as f:
 			activity_list = f.readlines()
 		activity_list = [x.strip() for x in activity_list] 
@@ -34,6 +39,8 @@ class inputProcessing:
 			x=activity.split(",")
 			# print(x)
 			pred=[]
+			pred_node_list=[]
+			succ_node_list=[]
 			sucs=[]
 			### assuming first column is name, last twos are resource and duration,, al others are dependency list
 			for i in range(1,len(x)-2):
@@ -43,7 +50,12 @@ class inputProcessing:
 					start_activities.append(x[0])
 				pred.append(x[i])
 
-			ac1=Activity(x[0],x[len(x)-2],x[len(x)-1],-1,-1,9874217,9874217,-1,pred,sucs)
+				# pred_node_list.append(Activity(x[i],x[len(x)-2],x[len(x)-1],-1,-1,9874217,9874217,-1,pred,sucs,-1))
+				
+
+			ac1=Activity(x[0],x[len(x)-2],x[len(x)-1],-1,-1,9874217,9874217,-1,pred,sucs,-1,[])
+
+			
 			all_activity.append(ac1)
 		## if there are more than 1 start nodes, make a start node on your own
 		if cnt>1:
@@ -56,10 +68,13 @@ class inputProcessing:
 		print("after fp ", all_activity)
 		all_activity=self.backward_pass(all_activity)
 		print(all_activity)
-		self.get_critical_path(all_activity)
+		critical_path=self.get_critical_path(all_activity)
 		resource_list=self.calculate_resource(all_activity)
 		cumulative_r=self.calculate_cumulative_R(all_activity,resource_list)
 		cumulative_r_2=self.calculate_cumulative_R_2(all_activity,resource_list)
+		non_critical_path=self.get_non_critical_path(all_activity, critical_path)
+		sorted_non_critical_path_list=self.sort_non_critical_on_es(non_critical_path, all_activity)
+		self.get_dependency_list(all_activity)
 
 	def rename_start_node(self, start_activities, all_activity):
 		sucs_list=[]
@@ -81,7 +96,7 @@ class inputProcessing:
 	def create_start_node(self, start_activities, all_activity):
 		pred=[]
 		sucs=start_activities
-		ac1=Activity("start",0,0,0,0,0,0,0,pred,sucs)
+		ac1=Activity("start",0,0,0,0,0,0,0,pred,sucs,-1,[])
 		# all_activity.append(ac1)
 		all_activity.insert(0,ac1)
 		## inserting start node at the 0 position
@@ -91,7 +106,7 @@ class inputProcessing:
 	def create_finish_node(self, finish_activities, all_activity):
 		pred=finish_activities
 		sucs=[]
-		ac1=Activity("finish",0,0,-1,-1,-1,-1,-1,finish_activities,sucs)
+		ac1=Activity("finish",0,0,-1,-1,-1,-1,-1,finish_activities,sucs,-1,[])
 		all_activity.append(ac1)
 		
 		return all_activity
@@ -247,6 +262,8 @@ class inputProcessing:
 		# for activity in all_activity:
 		# 	print("activity ", activity.name, activity.sucs, activity.pred, activity.es, activity.ef)
 		return all_activity
+
+
 	def backward_pass(self, all_activity):
 		pred_dict={}
 		for activity in all_activity:
@@ -279,6 +296,7 @@ class inputProcessing:
 				activity.freefloat= activity.ls-activity.es
 
 		print(critical_path)
+		return critical_path
 
 	def calculate_resource(self,all_activity):
 		n=all_activity[len(all_activity)-1].lf
@@ -315,6 +333,45 @@ class inputProcessing:
 
 		print(cumulative_r_2)
 		return cumulative_r_2
+
+	def get_non_critical_path(self,all_activity,critical_path):
+		non_critical_path=[]
+		print(critical_path)
+		for activity in all_activity:
+			if activity.name not in critical_path:
+				non_critical_path.append(activity.name)
+
+		
+
+		return non_critical_path
+
+	def sort_non_critical_on_es(self, non_critical_path, all_activity):
+		sorted_non_critical_path_list=[]
+		for activity in all_activity:
+			if activity.name in non_critical_path:
+				sorted_non_critical_path_list.append(activity)
+		sorted_non_critical_path_list=sorted(sorted_non_critical_path_list, key=operator.attrgetter('es'))
+
+		for val in sorted_non_critical_path_list:
+			print("print",val.name)
+
+		return sorted_non_critical_path_list
+
+	def get_dependency_list(self,all_activity):
+		
+
+		for activity in all_activity:
+			for suc_activity in all_activity:
+				for suc_val in activity.sucs:
+					if suc_activity.name==suc_val:
+						print("n", suc_val)
+						activity.dependencyList=suc_activity
+
+		for activity in all_activity:
+			print("activity ", activity.name, activity.sucs, activity.pred, activity.es, activity.ef,  activity.ls,  activity.lf, activity.dependencyList)
+
+
+
 
 inputProcessing().takeinput()
 # inputProcessing().forward_pass()
